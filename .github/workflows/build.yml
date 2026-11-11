@@ -1,0 +1,30 @@
+name: Build plugin
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -G Xcode
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package
+        run: |
+          mkdir out
+          cp -R build/MyChannelStrip_artefacts/Release/VST3/*.vst3 out/
+          cp -R build/MyChannelStrip_artefacts/Release/AU/*.component out/
+          for f in out/*; do codesign --force --deep -s - "$f"; done
+          cd out && zip -ry ../MyChannelStrip-mac.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyChannelStrip-mac
+          path: MyChannelStrip-mac.zip
